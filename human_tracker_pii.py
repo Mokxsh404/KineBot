@@ -759,3 +759,37 @@ def main():
                     latest_jpeg_bytes = jpeg_buf.tobytes()
             except Exception:
                 pass
+
+            now = time.time()
+            if (drive_cmd != last_drive or steer_cmd != last_steer) or (now - last_cmd_time > 0.2):
+                send_command(ip, drive_cmd, steer_cmd)
+                last_drive = drive_cmd
+                last_steer = steer_cmd
+                last_cmd_time = now
+
+            frame_count += 1
+            if now - fps_time >= 1.0:
+                fps = frame_count / (now - fps_time)
+                frame_count = 0
+                fps_time = now
+
+            if not headless:
+                cv2.imshow("KINE-BOT Tracker", frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+            else:
+                if frame_count == 0:
+                    print(f"[TRACK] FPS={fps:.1f} target={target_id} drive={drive_cmd} steer={steer_cmd}")
+
+    except KeyboardInterrupt:
+        print("\nStopped.")
+    finally:
+        send_command(ip, "S", "S")
+        if stream:
+            stream.close()
+        if not headless:
+            cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
